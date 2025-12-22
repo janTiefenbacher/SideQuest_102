@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
@@ -151,44 +153,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark 
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [const Color(0xFF2A2A2A), const Color(0xFF1A1A1A)],
-              )
-            : LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [kSky, kBrightBlue],
-              ),
-        ),
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                width: double.infinity,
-                alignment: Alignment.center,
-                child: Image.asset('onlyfriends.png', height: 40),
-              ),
+              const _HomeHeader(),
               Expanded(
-                child: Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _tabIndex = index;
-                      });
-                    },
-                    children: [
-                      _FeedTab(userId: user!.id),
-                      _FriendsRequestsTab(currentUserId: user.id),
-                      const ProfilePage(),
-                    ],
-                  ),
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _tabIndex = index;
+                    });
+                  },
+                  children: [
+                    _FeedTab(userId: user!.id),
+                    _FriendsRequestsTab(currentUserId: user.id),
+                    const ProfilePage(),
+                  ],
                 ),
               ),
             ],
@@ -884,102 +866,155 @@ class _ChallengeCardState extends State<_ChallengeCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: _selectQuest,
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: hasQuestForToday && selectedQuest != null
-                        ? _buildQuestDisplay()
-                        : _buildQuestSelection(),
-                  ),
-                  const SizedBox(height: 12),
-                  if (hasQuestForToday && selectedQuest != null)
-                    isQuestConfirmed ? _buildQuestInfo() : _buildQuestButtons()
-                  else
-                    _buildQuestButtons(),
-                ],
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1A2F4F), const Color(0xFF0E1C32)]
+                : [kSky, kBrightBlue],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: (isDark ? Colors.white : kBrightBlue)
+                .withValues(alpha: isDark ? 0.25 : 0.35),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-            // Timer in bottom right corner of the entire card
-            if (hasQuestForToday && selectedQuest != null)
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.schedule,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatDuration(_timeUntilNextQuest),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
+        ),
+        child: InkWell(
+          onTap: _selectQuest,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildQuestHeader(context),
+                const SizedBox(height: 12),
+                if (hasQuestForToday && selectedQuest != null)
+                  _buildQuestDisplay()
+                else
+                  _buildQuestSelection(),
+                const SizedBox(height: 12),
+                if (hasQuestForToday && selectedQuest != null)
+                  isQuestConfirmed ? _buildQuestInfo() : _buildQuestButtons()
+                else
+                  _buildQuestButtons(),
+                const SizedBox(height: 12),
+                if (hasQuestForToday && selectedQuest != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _InfoChip(
+                      icon: Icons.schedule,
+                      label: _formatDuration(_timeUntilNextQuest),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      background: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildQuestDisplay() {
-    final difficulty = selectedQuest!.difficulty;
-    final accent = difficulty.color;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            accent.withValues(alpha: 0.15),
-            accent.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+  Widget _buildQuestHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final quest = selectedQuest;
+    final textColor = theme.colorScheme.onSurface;
+    final chipBg = textColor.withValues(alpha: 0.08);
+    final iconColor =
+        quest?.difficulty.color ?? theme.colorScheme.primary;
+    final bool hasQuest = hasQuestForToday && quest != null;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: chipBg,
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: hasUploadedPhoto && uploadedImagePath != null
-          ? Column(
+          child: Icon(
+            quest?.difficulty.icon ?? Icons.local_fire_department,
+            color: iconColor,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hasQuest ? quest!.title : 'Daily Quest',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                hasQuest ? 'Heute reserviert' : 'Noch keine Quest ausgewählt',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: textColor.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        _InfoChip(
+          icon: Icons.emoji_events,
+            label: hasQuest ? 'Aktiv' : 'Neu',
+          color: textColor,
+          background: chipBg,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuestDisplay() {
+    final theme = Theme.of(context);
+    final accent = selectedQuest!.difficulty.color;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: hasUploadedPhoto && uploadedImagePath != null
+              ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ClipRRect(
@@ -993,154 +1028,63 @@ class _ChallengeCardState extends State<_ChallengeCard> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.white70),
+                    Icon(Icons.location_on,
+                        size: 16,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         location ?? 'Unbekannter Ort',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Icon(Icons.access_time, size: 16, color: Colors.white70),
+                    Icon(Icons.access_time,
+                        size: 16,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
                     const SizedBox(width: 4),
                     Text(
                       uploadTime != null
                           ? '${uploadTime!.hour.toString().padLeft(2, '0')}:${uploadTime!.minute.toString().padLeft(2, '0')}'
                           : '--:--',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildReactionChip(
-                        icon: Icons.thumb_up,
-                        label: upvotes.toString(),
-                        color: Colors.greenAccent,
-                        onTap: () => setState(() => upvotes++),
-                      ),
-                      const SizedBox(width: 16),
-                      _buildReactionChip(
-                        icon: Icons.thumb_down,
-                        label: downvotes.toString(),
-                        color: Colors.redAccent,
-                        onTap: () => setState(() => downvotes++),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        difficulty.icon,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                    _buildReactionChip(
+                      icon: Icons.thumb_up,
+                      label: upvotes.toString(),
+                      color: Colors.greenAccent,
+                      onTap: () => setState(() => upvotes++),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selectedQuest!.title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              _buildMetaChip(
-                                icon: Icons.local_fire_department,
-                                text: difficulty.label,
-                                color: accent,
-                                lightText: true,
-                              ),
-                              const SizedBox(width: 6),
-                              _buildMetaChip(
-                                icon: Icons.emoji_events,
-                                text: '${selectedQuest!.points} Punkte',
-                                color: Colors.white,
-                                lightText: false,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    const SizedBox(width: 16),
+                    _buildReactionChip(
+                      icon: Icons.thumb_down,
+                      label: downvotes.toString(),
+                      color: Colors.redAccent,
+                      onTap: () => setState(() => downvotes++),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  selectedQuest!.description,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.bolt, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Bleib im Flow! Bestätige deine Quest und halte deinen Streak am Leben.',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 12,
-                            height: 1.3,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
-            ),
+            )
+              : _CompactQuestSummary(
+                  quest: selectedQuest!,
+                  accent: accent,
+                  showDetails: isQuestConfirmed,
+                ),
+        ),
+      ),
     );
   }
 
@@ -1169,92 +1113,158 @@ class _ChallengeCardState extends State<_ChallengeCard> {
   }
 
   Widget _buildQuestInfo() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: selectedQuest!.difficulty.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                selectedQuest!.difficulty.label,
-                style: TextStyle(
-                  color: selectedQuest!.difficulty.color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
+        Expanded(
+          child: Text(
+            'Quest bestätigt – teile dein Update, um Punkte zu sichern.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+              height: 1.3,
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: kSky,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${selectedQuest!.points} Punkte',
-                style: const TextStyle(
-                  color: kNavy,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const Spacer(),
-            // Quest is confirmed - no change button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 16,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Bestätigt',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
-        if (isQuestConfirmed && !hasUploadedPhoto) ...[
-          const SizedBox(height: 8),
-          // Photo upload button
+        const SizedBox(width: 12),
+        if (isQuestConfirmed && !hasUploadedPhoto)
           FilledButton.icon(
             onPressed: _takePhoto,
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('Foto machen'),
+            icon: const Icon(Icons.camera_alt, size: 18),
+            label: const Text('Foto'),
             style: FilledButton.styleFrom(
               backgroundColor: kBrightBlue,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              minimumSize: const Size(0, 40),
             ),
           ),
-        ],
       ],
     );
   }
 
   Widget _buildQuestButtons() {
-    return FilledButton(
-      onPressed: _selectQuest,
-      child: const Text('Quest wählen'),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Noch keine Quest bestätigt. Wähle jetzt eine aus.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton(
+          onPressed: _selectQuest,
+          style: FilledButton.styleFrom(
+            backgroundColor: kBrightBlue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            minimumSize: const Size(0, 40),
+          ),
+          child: const Text('Auswählen'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompactQuestSummary extends StatelessWidget {
+  const _CompactQuestSummary({
+    required this.quest,
+    required this.accent,
+    required this.showDetails,
+  });
+
+  final Quest quest;
+  final Color accent;
+  final bool showDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final Color onSurface = colorScheme.onSurface;
+
+    return showDetails
+        ? Text(
+            quest.description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: onSurface.withValues(alpha: 0.9),
+              height: 1.4,
+            ),
+          )
+        : Text(
+            'Beschreibung erscheint nach Bestätigung deiner Quest.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: onSurface.withValues(alpha: 0.6),
+              height: 1.4,
+              fontStyle: FontStyle.italic,
+            ),
+          );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final Color textColor =
+        isDark ? Colors.white : theme.colorScheme.onSurface;
+    final Color chipBackground = isDark
+        ? Colors.white.withValues(alpha: 0.15)
+        : theme.colorScheme.primary.withValues(alpha: 0.08);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: chipBackground,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.local_fire_department,
+              color: isDark ? Colors.white : theme.colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SideQuest',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Bleib im Flow mit deinen Freunden',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: textColor.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _InfoChip(
+            icon: Icons.stacked_line_chart,
+            label: 'Daily',
+            color: textColor,
+            background: chipBackground,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1324,6 +1334,106 @@ Widget _buildMetaChip({
       ],
     ),
   );
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedDescriptionBanner extends StatelessWidget {
+  const _LockedDescriptionBanner({
+    required this.accent,
+    required this.background,
+    required this.message,
+  });
+
+  final Color accent;
+  final Color background;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: background.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accent.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: List.generate(
+              3,
+              (index) => Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 8),
+                child: Container(
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(Icons.lock_outline, size: 16, color: accent),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _FeedCard extends StatelessWidget {

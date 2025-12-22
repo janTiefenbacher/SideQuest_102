@@ -73,6 +73,7 @@ flutter:
   assets:
     - Logo_OnlyFriends.png
     - onlyfriends.png
+    - Background_SideQuest_Challengewahl.png.webp
 
 # App Icon generation
 flutter_launcher_icons:
